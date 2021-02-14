@@ -1,0 +1,40 @@
+direct_assay<-function(AT,ys,nt,yt){
+  if(sum(nt)!=length(yt)) return("input error")
+  if(length(AT)!=length(nt)) return("input error")
+  if(length(nt)==1){
+    ys<-log10(ys);yt<-log10(yt);
+    M<-mean(ys)-mean(yt);
+    R<-10^M;
+    potency<-AT*R;
+    ss<-(sum(ys^2)-sum(ys)^2/length(ys)+sum(yt^2)-sum(yt)^2/length(yt))/(length(ys)+length(yt)-2);
+    sm<-(ss*(length(ys)+length(yt))/(length(ys)*length(yt)))^0.5;
+    potency_95low<-AT*10^(M-qt(0.975,(length(ys)+length(yt)-2))*sm);
+    potency_95up<-AT*10^(M+qt(0.975,(length(ys)+length(yt)-2))*sm);
+  }
+  if(length(nt)!=1){
+    potency<-NA;length(potency)<-length(nt);
+    ss_interim<-NA;length(ss_interim)<-length(nt);
+    for(i in 1:length(nt)){
+      yt_interim<-yt[1:nt[i]];
+      ys_interim<-log10(ys);yt_interim<-log10(yt_interim);
+      M<-mean(ys_interim)-mean(yt_interim);
+      R<-10^M;
+      potency[i]<-AT[i]*R;
+      ss_interim[i]<-sum(yt_interim^2)-sum(yt_interim)^2/length(yt_interim)
+      yt<-yt[-(1:nt[i])];
+      i<-i+1;
+    }
+    ys<-log10(ys);
+    ss<-(sum(ys^2)-sum(ys)^2/length(ys)+sum(ss_interim))/(length(ys)-1+sum(nt)-length(nt));
+    sm<-(ss*(1/length(ys)+sum(1/nt)))^0.5;
+    ci<-10^(qt(0.975,(length(ys)-1+sum(nt)-length(nt)))*sm);
+    potency_95low<-potency/ci;
+    potency_95up<-potency*ci;
+  }
+  result_data<-matrix(c(potency,potency_95low,potency_95up),ncol=3);
+  rowname<-c("T1","T2","T3","T4","T5","T6","T7","T8","T9","T10");
+  colname<-c("Potency","Potency_95low","Potency_95up");
+  colnames(result_data)<-colname;
+  rownames(result_data)<-rowname[1:length(nt)];
+  return(result_data)
+  }
